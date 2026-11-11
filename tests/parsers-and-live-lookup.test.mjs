@@ -107,6 +107,33 @@ test('GOV.UK HTML parser extracts CSRF token, confirmation page, and final DN16F
   assert.equal(resultParsed.engineSize, '1197 cc');
   assert.equal(resultParsed.fuelType, 'PETROL');
   assert.equal(resultParsed.colour, 'GREY');
+  assert.equal(resultParsed.vrn, '');
+});
+
+test('GOV.UK invalid-VRN page is not treated as confirmable (prevents stale session vehicle)', () => {
+  const invalidVrnHtml = `
+    <div class="govuk-error-summary" aria-labelledby="error-summary-title" role="alert">
+      <h2 class="govuk-error-summary__title" id="error-summary-title">There is a problem</h2>
+      <div class="govuk-error-summary__body"><ul><li><a href="#vrn">The registration number you have provided is invalid</a></li></ul></div>
+    </div>
+    <h1>Enter the registration number of the vehicle</h1>
+    <form action="/vehicle-enquiry/save?locale=en" method="post">
+      <input type="hidden" name="authenticity_token" value="tok_vrn_form" />
+    </form>
+  `;
+  const parsed = parseGovUkConfirmPage(invalidVrnHtml);
+  assert.equal(parsed.isNotFound, true);
+  // The service only confirms (Step 3) on the real confirm page, so this page must never be confirmed
+  assert.equal(parsed.isConfirmPage, false);
+  assert.match(parsed.errorMessage, /not valid/i);
+
+  const resultWithPlate = parseGovUkResultPage(`
+    <h1><span class="reg-mark">
+      LV24 PWO
+    </span></h1>
+    <div class="govuk-panel" id="tax-status-panel"><h2 class="govuk-panel__title"><span aria-hidden="true">Taxed</span></h2></div>
+  `);
+  assert.equal(resultWithPlate.vrn, 'LV24PWO');
 });
 
 test('CarCheck & extended spec HTML parser extracts Model, BHP, MPG, and Tax costs', () => {

@@ -51,11 +51,14 @@ export function parseGovUkConfirmPage(html) {
   const isConfirmPage = /Is this the vehicle you are looking for\?/i.test(html);
   const isNotFound =
     /Vehicle details could not be found/i.test(html) ||
-    /You must enter your registration number in a valid format/i.test(html);
+    /You must enter your registration number in a valid format/i.test(html) ||
+    /registration number you have provided is invalid/i.test(html);
 
   let errorMessage = null;
   if (isNotFound) {
-    errorMessage = 'Vehicle details could not be found on DVLA (GOV.UK).';
+    errorMessage = /is invalid|valid format/i.test(html)
+      ? 'Registration number is not valid on DVLA (GOV.UK).'
+      : 'Vehicle details could not be found on DVLA (GOV.UK).';
   }
 
   const preview = {};
@@ -135,8 +138,13 @@ export function parseGovUkResultPage(html) {
     /^mot$/i.test(motStatus) ||
     (/valid/i.test(motStatus) && !/no\s+mot|expired/i.test(motStatus));
 
+  // Plate shown in the results header, used to verify the page belongs to the queried VRN
+  const regMarkMatch = html.match(/<span[^>]*class="[^"]*reg-mark[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+  const vrn = regMarkMatch ? cleanHtmlText(regMarkMatch[1]).replace(/[^a-zA-Z0-9]/g, '').toUpperCase() : '';
+
   return {
     source: 'vehicleenquiry.service.gov.uk',
+    vrn,
     taxStatus,
     taxDue,
     isTaxValid,

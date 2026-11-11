@@ -14,6 +14,21 @@ const GOVUK_BASE_URL = 'https://vehicleenquiry.service.gov.uk';
 const GOVUK_SAVE_URL = `${GOVUK_BASE_URL}/vehicle-enquiry/save?locale=en`;
 
 /**
+ * Guards against GOV.UK returning a different vehicle than the one queried
+ * (e.g. the previous vehicle cached in the browser session).
+ * @returns {Promise<null|{ ok: false, error: string, directUrl: string }>}
+ */
+async function rejectIfVrnMismatch(vrn, data, directUrl) {
+  if (!data.vrn || data.vrn === vrn) return null;
+  await logWarn('govuk-service', 'GOV.UK result VRN does not match queried VRN', { vrn, resultVrn: data.vrn });
+  return {
+    ok: false,
+    error: `GOV.UK returned a different vehicle (${data.vrn}); no DVLA data for ${vrn}.`,
+    directUrl
+  };
+}
+
+/**
  * Queries vehicleenquiry.service.gov.uk for a normalized UK VRN.
  * @param {string} vrn Normalized VRN (e.g., "DN16FTK")
  * @returns {Promise<{ ok: boolean, data?: object, error?: string, directUrl: string }>}
@@ -80,12 +95,20 @@ export async function fetchGovUkVehicleInfo(vrn) {
 
     if (/id="tax-status-panel"/i.test(step2Html)) {
       const data = parseGovUkResultPage(step2Html);
+      const mismatch = await rejectIfVrnMismatch(vrn, data, directUrl);
+      if (mismatch) return mismatch;
       await logInfo('govuk-service', 'Resolved GOV.UK result directly on Step 2', { vrn, elapsedMs: Date.now() - startMs });
       return { ok: true, data, directUrl };
     }
 
-    if (!confirmInfo.token) {
-      await logError('govuk-service', 'Missing confirmation token on Step 2', { vrn, status: step2Res.status });
+    // Only confirm when GOV.UK actually shows the "Is this the vehicle…" page.
+    // Confirming from any other page makes GOV.UK return the session's previous vehicle.
+    if (
+      !confirmInfo.isConfirmPage ||
+      !confirmInfo.token ||
+      (confirmInfo.confirmedVrn && confirmInfo.confirmedVrn !== vrn)
+    ) {
+      await logError('govuk-service', 'Unexpected GOV.UK page on Step 2', { vrn, status: step2Res.status });
       return {
         ok: false,
         error: 'Could not confirm vehicle on GOV.UK (Step 2).',
@@ -111,6 +134,8 @@ export async function fetchGovUkVehicleInfo(vrn) {
 
     const step3Html = await step3Res.text();
     const parsedResult = parseGovUkResultPage(step3Html);
+    const mismatch = await rejectIfVrnMismatch(vrn, parsedResult, directUrl);
+    if (mismatch) return mismatch;
 
     if (!parsedResult.make && confirmInfo.preview['Make']) {
       parsedResult.make = confirmInfo.preview['Make'];
