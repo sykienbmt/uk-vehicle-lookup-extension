@@ -33,3 +33,4 @@ node --test tests/parsers-and-live-lookup.test.mjs tests/e2e-chrome-extension.te
 # Build release zip package (dist/uk-vehicle-lookup-v<version>.zip)
 powershell -ExecutionPolicy Bypass -File scripts/build-chrome-web-store-zip.ps1
 ```
+
