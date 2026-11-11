@@ -35,6 +35,12 @@ function buildTableHtml(rows) {
  * @param {object} payload Result from lookupUkVehicle
  * @param {object} elements DOM references
  */
+function pendingSourceHint(payload) {
+  if (payload.pending?.carcheck) return 'Loading image & specs...';
+  if (payload.pending?.govuk) return 'Loading DVLA tax & MOT...';
+  return '';
+}
+
 export function renderVehicleResult(payload, elements) {
   const m = payload.merged || {};
   const evInfo = classifyEvStatus(m.fuelType, m.co2Emissions);
@@ -56,6 +62,7 @@ export function renderVehicleResult(payload, elements) {
       <div class="hero-title">${escapeHtml(fullTitle)}</div>
       ${m.modelDetail ? `<div class="hero-subtitle">${escapeHtml(m.modelDetail)}</div>` : ''}
       <div class="hero-badges">${badges}</div>
+      ${pendingSourceHint(payload) ? `<div class="hero-pending">⏳ ${escapeHtml(pendingSourceHint(payload))}</div>` : ''}
     </div>
     ${imgHtml}
   `;

@@ -11,6 +11,8 @@ import { logInfo, logWarn, logError } from '../utils/diagnostic-logger.js';
 
 const CARCHECK_URL_TEMPLATE = 'https://www.carcheck.co.uk/reg?i=';
 const EXTENDED_SPEC_URL_TEMPLATE = 'https://totalcarcheck.co.uk/FreeCheck?regno=';
+// Spec/image sources can hang when rate limited; never let them hold the result for long
+const FETCH_TIMEOUT_MS = 8000;
 
 /**
  * Fetches vehicle specs and CarCheck details for a given UK VRN.
@@ -26,7 +28,8 @@ export async function fetchCarCheckVehicleInfo(vrn) {
     fetch(directUrl, {
       method: 'GET',
       credentials: 'include',
-      headers: { Accept: 'text/html,application/xhtml+xml' }
+      headers: { Accept: 'text/html,application/xhtml+xml' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
     }).then(async (res) => ({
       status: res.status,
       finalUrl: res.url || directUrl,
@@ -35,7 +38,8 @@ export async function fetchCarCheckVehicleInfo(vrn) {
     fetch(specUrl, {
       method: 'GET',
       credentials: 'omit',
-      headers: { Accept: 'text/html,application/xhtml+xml' }
+      headers: { Accept: 'text/html,application/xhtml+xml' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
     }).then(async (res) => ({
       status: res.status,
       html: await res.text()

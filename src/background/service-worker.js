@@ -58,7 +58,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           vrn: message.vrn,
           senderUrl: sender?.tab?.url || 'extension-popup'
         });
-        const result = await lookupUkVehicle(message.vrn);
+        const tabId = sender?.tab?.id;
+        // Push the first available source to the in-page popover immediately; the full result follows via sendResponse
+        const onPartial = tabId === undefined ? undefined : (partial) => {
+          chrome.tabs
+            .sendMessage(tabId, { type: 'LOOKUP_PARTIAL', vrn: partial.vrn, result: partial }, { frameId: sender.frameId ?? 0 })
+            .catch(() => {});
+        };
+        const result = await lookupUkVehicle(message.vrn, { onPartial });
         if (result.ok) {
           await saveLookupToHistory(result);
         }

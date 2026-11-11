@@ -69,6 +69,8 @@ function displayResult(payload) {
   renderVehicleResult(payload, elements);
 }
 
+let latestSearchId = 0;
+
 async function executeSearch(rawInput) {
   const vrn = normalizeVrn(rawInput);
   if (!isValidUkVrn(vrn)) {
@@ -82,8 +84,13 @@ async function executeSearch(rawInput) {
   elements.loadingText.textContent = `Looking up ${formatVrnDisplay(vrn)} on GOV.UK & CarCheck...`;
   elements.loadingState.classList.remove('hidden');
 
+  const searchId = ++latestSearchId;
   try {
-    const result = await lookupUkVehicle(vrn);
+    // Render the first source that answers; the slower one (image/specs) fills in afterwards
+    const result = await lookupUkVehicle(vrn, {
+      onPartial: (partial) => { if (searchId === latestSearchId) displayResult(partial); }
+    });
+    if (searchId !== latestSearchId) return;
     elements.loadingState.classList.add('hidden');
 
     if (!result.ok) {
@@ -99,6 +106,7 @@ async function executeSearch(rawInput) {
     await refreshHistoryUi();
     displayResult(result);
   } catch (err) {
+    if (searchId !== latestSearchId) return;
     elements.loadingState.classList.add('hidden');
     showError(`Lookup failed: ${err.message || String(err)}`);
   }

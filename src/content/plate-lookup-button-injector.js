@@ -9,6 +9,13 @@
   window.__ukPlateLookupInjectorLoaded = true;
 
   const BTN_CLASS = 'uk-vehicle-ext-inline-lookup-btn';
+  // VRN whose full result has not arrived yet; partial results for anything else are stale
+  let pendingLookupVrn = null;
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message?.type !== 'LOOKUP_PARTIAL' || !message.vrn || message.vrn !== pendingLookupVrn) return;
+    if (window.__ukVehicleExtPopover) window.__ukVehicleExtPopover.showResult(message.result);
+  });
 
   function sendLog(level, message, meta = {}) {
     try {
@@ -102,7 +109,9 @@
         window.__ukVehicleExtPopover.showLoading(vrn, rect);
       }
 
+      pendingLookupVrn = vrn;
       chrome.runtime.sendMessage({ type: 'LOOKUP_VEHICLE', vrn }, (response) => {
+        if (pendingLookupVrn === vrn) pendingLookupVrn = null;
         if (chrome.runtime.lastError) {
           sendLog('ERROR', 'Runtime message error on LOOKUP_VEHICLE', {
             vrn,

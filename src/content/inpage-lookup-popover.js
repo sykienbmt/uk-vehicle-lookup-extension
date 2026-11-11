@@ -125,6 +125,14 @@
       ['Emissions & Euro', [m.euroStatus ? `Euro ${m.euroStatus}` : '', m.co2Emissions].filter(Boolean).join(' • ')],
       ['Last V5C / Export', [m.lastV5cDate, m.exportMarker ? `Export: ${m.exportMarker}` : ''].filter(Boolean).join(' • ')]
     ].filter(([, v]) => v);
+    const govPending = Boolean(payload.pending?.govuk);
+    const pendingHint = payload.pending?.carcheck ? 'Loading image &amp; specs...' : (govPending ? 'Loading DVLA tax &amp; MOT...' : '');
+    const statusPill = (label, status, detail, isValid) => govPending
+      ? `<div class="st-pill" style="background:#1e293b;border-color:#334155;color:#94a3b8;"><span>⏳ ${label}: Loading...</span></div>`
+      : `<div class="st-pill ${isValid ? 'st-ok' : 'st-bad'}">
+            <span>${isValid ? '✓' : '✗'} ${label}: ${esc(status || 'N/A')}</span>
+            <span style="font-weight:500;font-size:11px;">${esc(detail || '')}</span>
+          </div>`;
 
     root.innerHTML = `<style>${POPOVER_CSS}</style>
       <div class="card">
@@ -140,6 +148,7 @@
             <div class="h-title">${esc([m.make, m.model].filter(Boolean).join(' ') || m.displayVrn)}</div>
             ${m.modelDetail ? `<div class="h-sub">${esc(m.modelDetail)}</div>` : ''}
             <div style="font-size:11.5px;color:#cbd5e1;margin-top:4px;">${esc([m.year, m.engineSize, m.bhp].filter(Boolean).join(' • '))}</div>
+            ${pendingHint ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;">⏳ ${pendingHint}</div>` : ''}
           </div>
           ${m.vehicleImage ? `<img class="car-img" src="${esc(m.vehicleImage)}" alt="Vehicle" title="Hover to enlarge vehicle image" />` : ''}
         </div>
@@ -164,14 +173,8 @@
           ${rows.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
         </tbody></table>
         <div class="status-row">
-          <div class="st-pill ${m.isTaxValid ? 'st-ok' : 'st-bad'}">
-            <span>${m.isTaxValid ? '✓' : '✗'} TAX: ${esc(m.taxStatus || 'N/A')}</span>
-            <span style="font-weight:500;font-size:11px;">${esc(m.taxDue || '')}</span>
-          </div>
-          <div class="st-pill ${m.isMotValid ? 'st-ok' : 'st-bad'}">
-            <span>${m.isMotValid ? '✓' : '✗'} MOT: ${esc(m.motStatus || 'N/A')}</span>
-            <span style="font-weight:500;font-size:11px;">${esc(m.motExpiry || '')}</span>
-          </div>
+          ${statusPill('TAX', m.taxStatus, m.taxDue, m.isTaxValid)}
+          ${statusPill('MOT', m.motStatus, m.motExpiry, m.isMotValid)}
         </div>
         <div class="actions">
           <a class="btn" href="${esc(m.govUkUrl)}" target="_blank" rel="noopener">🏛️ Open GOV.UK</a>
