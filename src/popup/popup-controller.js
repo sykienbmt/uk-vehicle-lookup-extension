@@ -16,6 +16,9 @@ import {
   consumePendingOrLastVrn
 } from '../services/storage-history-service.js';
 import { renderVehicleResult, renderHistoryChips } from './ui-renderer.js';
+import { initThemeToggle } from './theme-preference.js';
+
+initThemeToggle(document.getElementById('themeToggleBtn'));
 
 const elements = {
   searchForm: document.getElementById('searchForm'),

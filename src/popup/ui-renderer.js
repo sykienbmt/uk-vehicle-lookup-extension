@@ -19,7 +19,7 @@ function escapeHtml(value) {
 function buildTableHtml(rows) {
   const validRows = rows.filter(([, val]) => val && String(val).trim() !== '');
   if (validRows.length === 0) {
-    return '<p style="color:#94a3b8;font-size:12px;">No detailed data available.</p>';
+    return '<p style="color:var(--text-muted);font-size:12px;">No detailed data available.</p>';
   }
   const trs = validRows
     .map(

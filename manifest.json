@@ -76,6 +76,7 @@
         "https://carcheck.co.uk/*"
       ],
       "js": [
+        "src/content/inpage-popover-theme-styles.js",
         "src/content/inpage-lookup-popover.js",
         "src/content/plate-lookup-button-injector.js"
       ],

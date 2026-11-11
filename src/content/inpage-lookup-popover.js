@@ -34,13 +34,16 @@
     return { cls: 'ev-no', title: '⛽ NON-EV', sub: f || 'PETROL / DIESEL' };
   }
 
+  const { css: POPOVER_CSS, THEME_STORAGE_KEY } = window.__ukVehiclePopoverStyles;
   let hostEl = null;
   let shadowRoot = null;
+  let currentTheme = 'dark';
 
   function ensureHost() {
     if (hostEl && document.body.contains(hostEl)) return shadowRoot;
     hostEl = document.createElement('div');
     hostEl.id = 'uk-vehicle-ext-popover-host';
+    hostEl.dataset.theme = currentTheme;
     hostEl.style.cssText = 'position:fixed;z-index:2147483646;top:72px;left:340px;font-family:system-ui,-apple-system,sans-serif;';
     ['keydown', 'keyup', 'keypress', 'click', 'mousedown'].forEach((ev) => {
       hostEl.addEventListener(ev, (e) => e.stopPropagation());
@@ -50,40 +53,61 @@
     return shadowRoot;
   }
 
-  const POPOVER_CSS = `
-    .card { width: 550px; background: #0f172a; color: #f8fafc; border: 2px solid #334155; border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.65); padding: 12px 14px; font-size: 13px; line-height: 1.45; position: relative; overflow: visible; }
-    .hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 10px; }
-    .plate-tag { background: #facc15; color: #09090b; font-weight: 900; font-size: 16px; padding: 3px 10px; border-radius: 5px; border: 2px solid #000; letter-spacing: 1.5px; }
-    .close-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 6px; padding: 3px 9px; font-size: 14px; font-weight: 700; cursor: pointer; }
-    .close-btn:hover { color: #fff; border-color: #f87171; }
-    .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; position: relative; overflow: visible; z-index: 30; }
-    .h-title { font-size: 16.5px; font-weight: 800; color: #fff; }
-    .h-sub { font-size: 12px; color: #38bdf8; font-weight: 600; margin-top: 2px; }
-    .car-img { width: 158px; height: 92px; object-fit: contain; background: #fff; border-radius: 6px; padding: 4px; border: 2px solid #475569; cursor: zoom-in; transform-origin: top left; transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease, border-color 0.22s ease; position: relative; z-index: 80; }
-    .car-img:hover { transform: scale(3.45); box-shadow: 0 20px 55px rgba(0,0,0,0.88); border-color: #facc15; }
-    .focus-grid { display: grid; grid-template-columns: 1.15fr 0.9fr 1.2fr; gap: 8px; margin-top: 9px; }
-    .f-box { background: #263349; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; }
-    .f-box.ev-yes { background: rgba(6, 95, 70, 0.55); border-color: #10b981; }
-    .f-box.ev-hybrid { background: rgba(146, 64, 14, 0.45); border-color: #f59e0b; }
-    .f-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #94a3b8; }
-    .f-val { font-size: 14.5px; font-weight: 800; color: #fff; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
-    .f-sub { font-size: 11px; color: #cbd5e1; margin-top: 2px; }
-    .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.75); display: inline-block; flex-shrink: 0; }
-    .tbl { width: 100%; border-collapse: collapse; margin-top: 9px; background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }
-    .tbl tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .tbl td { padding: 4.5px 9px; font-size: 12px; }
-    .tbl td.k { color: #94a3b8; width: 42%; }
-    .tbl td.v { font-weight: 600; text-align: right; color: #f8fafc; }
-    .status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
-    .st-pill { border-radius: 6px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; }
-    .st-ok { background: rgba(0, 112, 60, 0.85); border: 1px solid #22c55e; }
-    .st-bad { background: rgba(212, 53, 28, 0.85); border: 1px solid #ef4444; }
-    .actions { display: flex; gap: 6px; margin-top: 9px; }
-    .btn { flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 6px 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
-    .btn:hover { border-color: #38bdf8; }
-  `;
+  // Set when the user closes the popover, so a lookup still in flight does not reopen it
+  let dismissed = false;
+
+  function closePopover() {
+    dismissed = true;
+    if (hostEl) hostEl.remove();
+  }
+
+  function applyTheme(theme) {
+    currentTheme = theme === 'light' ? 'light' : 'dark';
+    if (!hostEl) return;
+    hostEl.dataset.theme = currentTheme;
+    const btn = shadowRoot && shadowRoot.getElementById('themePop');
+    if (btn) btn.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+  }
+
+  // Header buttons shared by every popover state: theme toggle + close
+  const HEADER_BUTTONS = `<div class="hdr-actions">
+      <button class="close-btn theme-btn" id="themePop" title="Toggle light / dark theme"></button>
+      <button class="close-btn" id="closePop" title="Close (Esc)">✕</button>
+    </div>`;
+
+  function wireHeader(root) {
+    root.getElementById('closePop').onclick = closePopover;
+    root.getElementById('themePop').onclick = () => {
+      const next = currentTheme === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      try {
+        chrome.storage.local.set({ [THEME_STORAGE_KEY]: next });
+      } catch (_) {
+        // Extension context invalidated (extension reloaded): keep the local theme only
+      }
+    };
+    applyTheme(currentTheme);
+  }
+
+  try {
+    chrome.storage.local.get(THEME_STORAGE_KEY).then((data) => applyTheme(data[THEME_STORAGE_KEY]));
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes[THEME_STORAGE_KEY]) applyTheme(changes[THEME_STORAGE_KEY].newValue);
+    });
+  } catch (_) {
+    // Storage unavailable: stay on the dark default
+  }
+
+  // Close on click outside the popover or on Escape (capture phase so page handlers cannot swallow it)
+  document.addEventListener('mousedown', (e) => {
+    if (hostEl && hostEl.isConnected && !e.composedPath().includes(hostEl)) closePopover();
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && hostEl && hostEl.isConnected) closePopover();
+  }, true);
 
   function showLoading(vrn, anchorRect) {
+    dismissed = false;
     const root = ensureHost();
     if (anchorRect) {
       hostEl.style.top = `${Math.max(16, Math.min(window.innerHeight - 460, anchorRect.top - 20))}px`;
@@ -93,23 +117,24 @@
       <div class="card">
         <div class="hdr">
           <span class="plate-tag">${esc(vrn)}</span>
-          <span style="color:#94a3b8;font-size:12px;">Searching GOV.UK &amp; CarCheck...</span>
-          <button class="close-btn" id="closePop">✕</button>
+          <span style="color:var(--muted);font-size:12px;">Searching GOV.UK &amp; CarCheck...</span>
+          ${HEADER_BUTTONS}
         </div>
-        <div style="padding:18px;text-align:center;color:#cbd5e1;">⏳ Fetching Vehicle Type, Colour &amp; EV Status...</div>
+        <div style="padding:18px;text-align:center;color:var(--soft);">⏳ Fetching Vehicle Type, Colour &amp; EV Status...</div>
       </div>`;
-    root.getElementById('closePop').onclick = () => hostEl.remove();
+    wireHeader(root);
   }
 
   function showResult(payload) {
+    if (dismissed) return;
     const root = ensureHost();
     if (!payload || !payload.ok) {
       root.innerHTML = `<style>${POPOVER_CSS}</style>
         <div class="card">
-          <div class="hdr"><span class="plate-tag">${esc(payload?.vrn || '')}</span><button class="close-btn" id="closePop">✕</button></div>
-          <div style="color:#fca5a5;padding:10px;">${esc(payload?.govuk?.error || payload?.error || 'Vehicle details could not be found.')}</div>
+          <div class="hdr"><span class="plate-tag">${esc(payload?.vrn || '')}</span>${HEADER_BUTTONS}</div>
+          <div style="color:var(--error);padding:10px;">${esc(payload?.govuk?.error || payload?.error || 'Vehicle details could not be found.')}</div>
         </div>`;
-      root.getElementById('closePop').onclick = () => hostEl.remove();
+      wireHeader(root);
       return;
     }
 
@@ -128,7 +153,7 @@
     const govPending = Boolean(payload.pending?.govuk);
     const pendingHint = payload.pending?.carcheck ? 'Loading image &amp; specs...' : (govPending ? 'Loading DVLA tax &amp; MOT...' : '');
     const statusPill = (label, status, detail, isValid) => govPending
-      ? `<div class="st-pill" style="background:#1e293b;border-color:#334155;color:#94a3b8;"><span>⏳ ${label}: Loading...</span></div>`
+      ? `<div class="st-pill st-wait"><span>⏳ ${label}: Loading...</span></div>`
       : `<div class="st-pill ${isValid ? 'st-ok' : 'st-bad'}">
             <span>${isValid ? '✓' : '✗'} ${label}: ${esc(status || 'N/A')}</span>
             <span style="font-weight:500;font-size:11px;">${esc(detail || '')}</span>
@@ -139,16 +164,16 @@
         <div class="hdr">
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="plate-tag">${esc(m.displayVrn || payload.vrn)}</span>
-            <span style="font-size:12px;color:#94a3b8;font-weight:600;">UK Vehicle Lookup</span>
+            <span style="font-size:12px;color:var(--muted);font-weight:600;">UK Vehicle Lookup</span>
           </div>
-          <button class="close-btn" id="closePop" title="Close">✕</button>
+          ${HEADER_BUTTONS}
         </div>
         <div class="hero">
           <div>
             <div class="h-title">${esc([m.make, m.model].filter(Boolean).join(' ') || m.displayVrn)}</div>
             ${m.modelDetail ? `<div class="h-sub">${esc(m.modelDetail)}</div>` : ''}
-            <div style="font-size:11.5px;color:#cbd5e1;margin-top:4px;">${esc([m.year, m.engineSize, m.bhp].filter(Boolean).join(' • '))}</div>
-            ${pendingHint ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;">⏳ ${pendingHint}</div>` : ''}
+            <div style="font-size:11.5px;color:var(--soft);margin-top:4px;">${esc([m.year, m.engineSize, m.bhp].filter(Boolean).join(' • '))}</div>
+            ${pendingHint ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">⏳ ${pendingHint}</div>` : ''}
           </div>
           ${m.vehicleImage ? `<img class="car-img" src="${esc(m.vehicleImage)}" alt="Vehicle" title="Hover to enlarge vehicle image" />` : ''}
         </div>
@@ -181,7 +206,7 @@
           <a class="btn" href="${esc(m.carCheckUrl)}" target="_blank" rel="noopener">🚗 Open CarCheck</a>
         </div>
       </div>`;
-    root.getElementById('closePop').onclick = () => hostEl.remove();
+    wireHeader(root);
   }
 
   window.__ukVehicleExtPopover = { showLoading, showResult };
