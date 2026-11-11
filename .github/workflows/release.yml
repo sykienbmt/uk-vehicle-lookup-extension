@@ -1,0 +1,34 @@
+name: Build & Publish Extension Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Package Extension ZIP
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          mkdir -p dist
+          zip -r "dist/uk-vehicle-lookup-v${VERSION}.zip" \
+            manifest.json popup.html logs.html src styles icons rules
+          echo "ZIP_PATH=dist/uk-vehicle-lookup-v${VERSION}.zip" >> "$GITHUB_ENV"
+          echo "EXT_VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Upload ZIP to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+          generate_release_notes: true

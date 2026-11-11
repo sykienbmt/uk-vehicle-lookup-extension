@@ -1,0 +1,91 @@
+{
+  "manifest_version": 3,
+  "name": "UK Vehicle Plate Lookup (GOV.UK & CarCheck)",
+  "version": "1.2.1",
+  "description": "Instant UK vehicle registration lookup (Vehicle Type, Colour, EV Status, GOV.UK & CarCheck) inline on UKPC Verification and in Chrome.",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "sidePanel",
+    "scripting",
+    "tabs",
+    "cookies",
+    "declarativeNetRequest",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "https://vehicleenquiry.service.gov.uk/*",
+    "https://www.carcheck.co.uk/*",
+    "https://carcheck.co.uk/*",
+    "https://totalcarcheck.co.uk/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules/dnr-rules.json"
+      }
+    ]
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "UK Vehicle Plate Lookup",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "options_page": "logs.html",
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://vehicleenquiry.service.gov.uk/*"
+      ],
+      "js": [
+        "src/content/govuk-autofill-content-script.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://www.carcheck.co.uk/*",
+        "https://carcheck.co.uk/*"
+      ],
+      "js": [
+        "src/content/carcheck-sync-content-script.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "https://vehicleenquiry.service.gov.uk/*",
+        "https://www.carcheck.co.uk/*",
+        "https://carcheck.co.uk/*"
+      ],
+      "js": [
+        "src/content/inpage-lookup-popover.js",
+        "src/content/plate-lookup-button-injector.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

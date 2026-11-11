@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UK Vehicle Plate Lookup</title>
+  <link rel="stylesheet" href="styles/popup-styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-row">
+        <span class="uk-badge-mini">UK</span>
+        <div>
+          <h1 class="app-title">UK Vehicle Lookup</h1>
+          <p class="app-subtitle">GOV.UK DVLA &amp; CarCheck Auto-Search</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="openSidePanelBtn" class="icon-btn" title="Open in Chrome Side Panel">
+          &#x25EB; Side Panel
+        </button>
+      </div>
+    </header>
+
+    <!-- UK Number Plate Search Bar -->
+    <section class="search-section">
+      <form id="searchForm" class="plate-form" autocomplete="off">
+        <div class="uk-plate-box">
+          <div class="uk-plate-flag">
+            <span class="flag-stars">🇬🇧</span>
+            <span class="flag-code">UK</span>
+          </div>
+          <input
+            id="vrnInput"
+            type="text"
+            class="uk-plate-input"
+            placeholder="DN16 FTK"
+            maxlength="10"
+            autofocus
+            aria-label="UK Registration Number"
+          />
+          <button type="button" id="pasteBtn" class="plate-paste-btn" title="Paste VRN from Clipboard &amp; Search">
+            📋 Paste
+          </button>
+        </div>
+        <button type="submit" id="searchBtn" class="search-submit-btn">
+          🔍 Search
+        </button>
+      </form>
+
+      <!-- Recent History Bar -->
+      <div class="history-bar">
+        <span class="history-label">Recent:</span>
+        <div id="historyChips" class="history-chips"></div>
+        <button id="clearHistoryBtn" class="clear-history-btn hidden" title="Clear search history">Clear</button>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="state-box hidden">
+      <div class="spinner"></div>
+      <p id="loadingText" class="state-text">Searching GOV.UK &amp; CarCheck...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-banner hidden"></div>
+
+    <!-- Main Result Container -->
+    <main id="resultContainer" class="result-container hidden">
+      <!-- 1. Vehicle Hero + Hoverable Big Image + Primary Focus (Make/Model/Type, Colour, EV) -->
+      <div id="vehicleHero" class="vehicle-hero"></div>
+      <div id="focusGrid" class="focus-grid"></div>
+
+      <!-- 2. Data View Tabs (No inner scrollbars!) -->
+      <div class="tabs-bar">
+        <button type="button" class="tab-btn active" data-tab="overview">Overview</button>
+        <button type="button" class="tab-btn" data-tab="govuk">GOV.UK DVLA</button>
+        <button type="button" class="tab-btn" data-tab="carcheck">CarCheck &amp; Specs</button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div id="tab-overview" class="tab-panel active"></div>
+      <div id="tab-govuk" class="tab-panel hidden"></div>
+      <div id="tab-carcheck" class="tab-panel hidden"></div>
+
+      <!-- 3. Tax & MOT Status Grid (Placed at bottom as secondary info) -->
+      <div id="statusGrid" class="status-grid"></div>
+
+      <!-- Quick Action Footer -->
+      <footer class="action-footer">
+        <button type="button" id="copySummaryBtn" class="action-btn primary-action">
+          📄 Copy Summary
+        </button>
+        <button type="button" id="openGovUkBtn" class="action-btn">
+          🏛️ Open GOV.UK
+        </button>
+        <button type="button" id="openCarCheckBtn" class="action-btn">
+          🚗 Open CarCheck
+        </button>
+        <button type="button" id="openBothBtn" class="action-btn" title="Open both sites in new tabs">
+          ⚡ Open Both
+        </button>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="src/popup/popup-controller.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Origin",
+          "operation": "set",
+          "value": "https://vehicleenquiry.service.gov.uk"
+        },
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://vehicleenquiry.service.gov.uk/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||vehicleenquiry.service.gov.uk/",
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Origin",
+          "operation": "set",
+          "value": "https://totalcarcheck.co.uk"
+        },
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://totalcarcheck.co.uk/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||totalcarcheck.co.uk/",
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
+  }
+]
+

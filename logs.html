@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UK Vehicle Lookup — Diagnostic &amp; Error Logs</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      padding: 24px;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 18px; margin: 0; }
+    .sub { color: #94a3b8; font-size: 12.5px; margin-top: 4px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input, select, button {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 12.5px;
+    }
+    button { cursor: pointer; font-weight: 700; }
+    button:hover { border-color: #38bdf8; }
+    button.primary { background: #1d4ed8; border-color: #1d4ed8; }
+    button.danger { background: #7f1d1d; border-color: #ef4444; }
+    .log-box {
+      background: #090d16;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12.5px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+    .log-line { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .lvl-ERROR { color: #fca5a5; background: rgba(220, 38, 38, 0.14); }
+    .lvl-WARN { color: #fde047; }
+    .lvl-INFO { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>UK Vehicle Plate Lookup — Diagnostic &amp; Error Trace Logs</h1>
+      <div class="sub">Trace all GOV.UK &amp; CarCheck HTTP steps, latency, parser warnings, and runtime errors.</div>
+    </div>
+    <div class="toolbar">
+      <input id="filterInput" type="text" placeholder="Filter by VRN or keyword..." />
+      <select id="levelSelect">
+        <option value="ALL">All Levels</option>
+        <option value="ERROR">ERROR only</option>
+        <option value="WARN">WARN &amp; ERROR</option>
+      </select>
+      <button id="refreshBtn" type="button">↻ Refresh</button>
+      <button id="downloadLogBtn" type="button" class="primary">⬇ Download .log File</button>
+      <button id="clearBtn" type="button" class="danger">🗑 Clear Logs</button>
+    </div>
+  </div>
+
+  <div id="logContainer" class="log-box">Loading diagnostic logs...</div>
+
+  <script type="module" src="src/logs/logs-viewer.js"></script>
+</body>
+</html>
+
